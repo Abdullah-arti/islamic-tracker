@@ -20,76 +20,72 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Setup Flutter
+      - name: Setup Flutter 3.10.6
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.6'
+          flutter-version: '3.10.6'
           channel: 'stable'
-          cache: true
 
-      - name: Create assets directories
+      - name: Create assets
         run: |
           mkdir -p islamic_tracker/assets/fonts
           mkdir -p islamic_tracker/assets/sounds
-
-      - name: Download Amiri Font
-        run: |
           wget -q "https://github.com/google/fonts/raw/main/ofl/amiri/Amiri-Regular.ttf" -O islamic_tracker/assets/fonts/Amiri-Regular.ttf
           wget -q "https://github.com/google/fonts/raw/main/ofl/amiri/Amiri-Bold.ttf" -O islamic_tracker/assets/fonts/Amiri-Bold.ttf
 
-      - name: Fix pubspec.yaml
+      - name: Write pubspec.yaml
         run: |
-          cat > islamic_tracker/pubspec.yaml << 'EOF'
-          name: islamic_tracker
-          description: Daily Islamic Worship Tracker
-          publish_to: 'none'
-          version: 1.0.0+1
+          cat > islamic_tracker/pubspec.yaml << 'PUBSPEC'
+name: islamic_tracker
+description: Islamic Worship Tracker
+publish_to: none
+version: 1.0.0+1
 
-          environment:
-            sdk: '>=2.17.0 <4.0.0'
+environment:
+  sdk: ">=2.17.0 <3.0.0"
 
-          dependencies:
-            flutter:
-              sdk: flutter
-            flutter_localizations:
-              sdk: flutter
-            shared_preferences: ^2.2.2
-            sqflite: ^2.3.0
-            path: ^1.8.3
-            flutter_local_notifications: ^17.0.0
-            timezone: ^0.9.3
-            flutter_timezone: ^1.0.7
-            adhan: ^2.0.0+1
-            fl_chart: ^0.67.0
-            intl: '0.18.1'
-            cupertino_icons: ^1.0.6
-            permission_handler: ^11.3.0
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  shared_preferences: ^2.0.15
+  sqflite: ^2.2.0+3
+  path: ^1.8.2
+  flutter_local_notifications: ^14.0.0+2
+  timezone: ^0.9.1
+  flutter_timezone: ^1.0.4
+  adhan: ^2.0.0+1
+  fl_chart: ^0.62.0
+  intl: ^0.17.0
+  cupertino_icons: ^1.0.5
+  permission_handler: ^10.2.0
 
-          dev_dependencies:
-            flutter_test:
-              sdk: flutter
-            flutter_lints: ^3.0.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
 
-          flutter:
-            uses-material-design: true
-            assets:
-              - assets/fonts/
-              - assets/sounds/
-            fonts:
-              - family: Amiri
-                fonts:
-                  - asset: assets/fonts/Amiri-Regular.ttf
-                  - asset: assets/fonts/Amiri-Bold.ttf
-                    weight: 700
-          EOF
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/fonts/
+    - assets/sounds/
+  fonts:
+    - family: Amiri
+      fonts:
+        - asset: assets/fonts/Amiri-Regular.ttf
+        - asset: assets/fonts/Amiri-Bold.ttf
+          weight: 700
+PUBSPEC
 
-      - name: Get Flutter dependencies
+      - name: flutter pub get
         working-directory: islamic_tracker
         run: flutter pub get
 
-      - name: Build Release APK
+      - name: Build APK
         working-directory: islamic_tracker
-        run: flutter build apk --release --no-shrink --target-platform android-arm64
+        run: flutter build apk --release --target-platform android-arm64
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
