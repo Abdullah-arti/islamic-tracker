@@ -1,0 +1,113 @@
+name: Build Islamic Tracker APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.6'
+          channel: 'stable'
+          cache: true
+
+      - name: Create assets directories
+        run: |
+          mkdir -p islamic_tracker/assets/fonts
+          mkdir -p islamic_tracker/assets/sounds
+
+      - name: Download Amiri Font
+        run: |
+          wget -q "https://github.com/google/fonts/raw/main/ofl/amiri/Amiri-Regular.ttf" -O islamic_tracker/assets/fonts/Amiri-Regular.ttf
+          wget -q "https://github.com/google/fonts/raw/main/ofl/amiri/Amiri-Bold.ttf" -O islamic_tracker/assets/fonts/Amiri-Bold.ttf
+
+      - name: Fix pubspec.yaml
+        run: |
+          cat > islamic_tracker/pubspec.yaml << 'EOF'
+          name: islamic_tracker
+          description: Daily Islamic Worship Tracker
+          publish_to: 'none'
+          version: 1.0.0+1
+
+          environment:
+            sdk: '>=2.17.0 <4.0.0'
+
+          dependencies:
+            flutter:
+              sdk: flutter
+            flutter_localizations:
+              sdk: flutter
+            shared_preferences: ^2.2.2
+            sqflite: ^2.3.0
+            path: ^1.8.3
+            flutter_local_notifications: ^17.0.0
+            timezone: ^0.9.3
+            flutter_timezone: ^1.0.7
+            adhan: ^2.0.0+1
+            fl_chart: ^0.67.0
+            intl: '0.18.1'
+            cupertino_icons: ^1.0.6
+            permission_handler: ^11.3.0
+
+          dev_dependencies:
+            flutter_test:
+              sdk: flutter
+            flutter_lints: ^3.0.0
+
+          flutter:
+            uses-material-design: true
+            assets:
+              - assets/fonts/
+              - assets/sounds/
+            fonts:
+              - family: Amiri
+                fonts:
+                  - asset: assets/fonts/Amiri-Regular.ttf
+                  - asset: assets/fonts/Amiri-Bold.ttf
+                    weight: 700
+          EOF
+
+      - name: Get Flutter dependencies
+        working-directory: islamic_tracker
+        run: flutter pub get
+
+      - name: Build Release APK
+        working-directory: islamic_tracker
+        run: flutter build apk --release --no-shrink --target-platform android-arm64
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: islamic-tracker-apk
+          path: islamic_tracker/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "مُتابع العبادات v1.0.${{ github.run_number }}"
+          body: |
+            ## 🕌 مُتابع العبادات اليومية
+            ⬇️ حمّل ملف app-release.apk وثبّته على هاتفك
+          files: islamic_tracker/build/app/outputs/flutter-apk/app-release.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
